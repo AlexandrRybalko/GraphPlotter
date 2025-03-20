@@ -3,10 +3,94 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        xmlns:behaviours="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:local="clr-namespace:GraphPlotter"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <ContentControl Grid.Column="0"
+                    Content="{Binding Plot, Mode=OneWay}">
+            <behaviours:Interaction.Triggers>
+                <behaviours:EventTrigger EventName="MouseWheel">
+                    <behaviours:InvokeCommandAction Command="{Binding UpdatePlotCommand}"/>
+                </behaviours:EventTrigger>
+                <behaviours:EventTrigger EventName="MouseLeftButtonUp">
+                    <behaviours:InvokeCommandAction Command="{Binding UpdatePlotCommand}"/>
+                </behaviours:EventTrigger>
+                <behaviours:EventTrigger EventName="Closing">
+                    <behaviours:InvokeCommandAction Command="{Binding UpdatePlotCommand}"/>
+                </behaviours:EventTrigger>
+            </behaviours:Interaction.Triggers>
+        </ContentControl>
+
+        <StackPanel Grid.Column="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="Function"
+                       Grid.Column="0"
+                       Grid.Row="0"/>
+                <ComboBox Text="Function"
+                      Grid.Column="1"
+                      Grid.Row="0"
+                      IsEditable="true"
+                      IsReadOnly="false"
+                      SelectedIndex="{Binding SelectedFunction, Mode=TwoWay}"
+                      ItemsSource="{Binding Functions}"/>
+
+                <TextBlock Grid.Column="0"
+                       Grid.Row="1"
+                       Text="Mult:"/>
+                <TextBox Grid.Column="1" 
+                     Grid.Row="1"
+                     Width="Auto"
+                     Text="{Binding Mult}"/>
+                <TextBlock Grid.Column="0"
+                       Grid.Row="2"
+                       Text="Y axis offset:"/>
+                <TextBox Grid.Column="1"
+                     Grid.Row="2"
+                     Width="Auto"
+                     Text="{Binding YOffset}"/>
+                <TextBlock Grid.Column="0"
+                       Grid.Row="3"
+                       Text="Oscillations:"/>
+                <TextBox Grid.Column="1"
+                     Grid.Row="3"
+                     Width="Auto"
+                     Text="{Binding Oscillations}"/>
+                <TextBlock Grid.Column="0"
+                       Grid.Row="4"
+                       Text="X axis offset:"/>
+                <TextBox Grid.Column="1"
+                     Grid.Row="4"
+                     Width="Auto"
+                     Text="{Binding XOffset}"/>
+                <StackPanel Orientation="Horizontal"
+                        Grid.Row="5">
+                    <Button Content="Plot"
+                        Command="{Binding UpdatePlotCommand}"/>
+                    <Button Content="Save"
+                        Command="{Binding SavePlotCommand}"/>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
     </Grid>
 </Window>
