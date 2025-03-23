@@ -18,17 +18,18 @@ namespace GraphPlotter.ViewModels
         private readonly double delta = 0.1;
         private readonly string parametersFilePath = AppDomain.CurrentDomain.BaseDirectory + "\\prevPar.txt";
         private ParametersModel parameters;
+        private Dictionary<int, Func<double[], double[]>> functions;
 
         public IList<string> Functions { get; }
         public WpfPlot Plot { get; } = new WpfPlot();
 
-        public int SelectedFunction
+        public int SelectedFunctionIndex
         {
             get => parameters.SelectedFunction;
             set
             {
                 parameters.SelectedFunction = value;
-                OnPropertyChanged(nameof(SelectedFunction));
+                OnPropertyChanged(nameof(SelectedFunctionIndex));
             }
         }
 
@@ -81,12 +82,17 @@ namespace GraphPlotter.ViewModels
             Functions = new ObservableCollection<string>() { "F(x)=sin(x)", "F(x)=cos(x)", "F(x)=sinc(x)" };
             UpdatePlotCommand = new RelayCommand(UpdatePlotExecute);
             SavePlotCommand = new RelayCommand(SavePlotExecute, SavePlotCanExecute);
+
+            functions = new Dictionary<int, Func<double[], double[]>>();
+            functions.Add(0, GetSinYs);
+            functions.Add(1, GetCosYs);
+            functions.Add(2, GetSincYs);
         }
 
         public void SaveState()
         {
-            var p = JsonSerializer.Serialize<ParametersModel>(parameters);
-            File.WriteAllText(parametersFilePath, p);
+            var serializedParameters = JsonSerializer.Serialize<ParametersModel>(parameters);
+            File.WriteAllText(parametersFilePath, serializedParameters);
         }
 
         private void LoadPreviousParameters()
@@ -115,19 +121,7 @@ namespace GraphPlotter.ViewModels
         {
             var xs = GetXs();
             var ys = new double[xs.Length];
-
-            if (SelectedFunction == 0)
-            {
-                ys = GetSinYs(xs);
-            }
-            else if (SelectedFunction == 1)
-            {
-                ys = GetCosYs(xs);
-            }
-            else if (SelectedFunction == 2)
-            {
-                ys = GetSincYs(xs);
-            }
+            ys = functions[SelectedFunctionIndex](xs);
 
             Plot.Plot.Clear();
             Plot.Plot.Add.SignalXY(xs, ys);
@@ -187,15 +181,7 @@ namespace GraphPlotter.ViewModels
 
             for (int i = 0; i < xs.Length; i++)
             {
-                if (xs[i] == 0)
-                {
-                    result[i] = 1 * Mult + YOffset;
-                }
-                else
-                {
-                    //result[i] = Math.Sin(xs[i]) / xs[i] + YOffset;
-                    result[i] = Mult * Math.Sin(xs[i] * Math.PI) / (xs[i] * Math.PI) + YOffset;
-                }
+                result[i] = Mult * Math.Sin(xs[i] * Math.PI * Oscillations + XOffset) / (xs[i] * Math.PI * Oscillations + XOffset) + YOffset;
             }
 
             return result;

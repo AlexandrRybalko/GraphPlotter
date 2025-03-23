@@ -18,7 +18,5 @@ namespace GraphPlotter
             var vm = DataContext as MainViewModel;
             vm.SaveState();
         }
-
-        //TODO сохранять командой, sinc доделать
     }
 }
