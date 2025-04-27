@@ -18,10 +18,10 @@
                     Content="{Binding Plot, Mode=OneWay}">
             <behaviours:Interaction.Triggers>
                 <behaviours:EventTrigger EventName="MouseWheel">
-                    <behaviours:InvokeCommandAction Command="{Binding UpdatePlotCommand}"/>
+                    <behaviours:InvokeCommandAction Command="{Binding UpdatePlotOnInteractionCommand}"/>
                 </behaviours:EventTrigger>
                 <behaviours:EventTrigger EventName="MouseLeftButtonUp">
-                    <behaviours:InvokeCommandAction Command="{Binding UpdatePlotCommand}"/>
+                    <behaviours:InvokeCommandAction Command="{Binding UpdatePlotOnInteractionCommand}"/>
                 </behaviours:EventTrigger>
             </behaviours:Interaction.Triggers>
         </ContentControl>
@@ -50,7 +50,7 @@
                       IsEditable="true"
                       IsReadOnly="false"
                       SelectedIndex="{Binding SelectedFunctionIndex, Mode=TwoWay}"
-                      ItemsSource="{Binding Functions}"/>
+                      ItemsSource="{Binding FunctionTitleList}"/>
 
                 <TextBlock Grid.Column="0"
                        Grid.Row="1"
@@ -58,32 +58,28 @@
                 <TextBox Grid.Column="1"
                          Grid.Row="1"
                          Width="Auto"
-                         Text="{Binding Mult}"
-                         PreviewTextInput="TextBlockPreviewTextInput"/>
+                         Text="{Binding Mult}"/>
                 <TextBlock Grid.Column="0"
                            Grid.Row="2"
                            Text="Y axis offset:"/>
                 <TextBox Grid.Column="1"
                          Grid.Row="2"
                          Width="Auto"
-                         Text="{Binding YOffset}"
-                         PreviewTextInput="TextBlockPreviewTextInput"/>
+                         Text="{Binding YOffset}"/>
                 <TextBlock Grid.Column="0"
                            Grid.Row="3"
                            Text="Oscillations:"/>
                 <TextBox Grid.Column="1"
                          Grid.Row="3"
                          Width="Auto"
-                         Text="{Binding Oscillations}"
-                         PreviewTextInput="TextBlockPreviewTextInput"/>
+                         Text="{Binding Oscillations}"/>
                 <TextBlock Grid.Column="0"
                            Grid.Row="4"
                            Text="X axis offset:"/>
                 <TextBox Grid.Column="1"
                          Grid.Row="4"
                          Width="Auto"
-                         Text="{Binding XOffset}"
-                         PreviewTextInput="TextBlockPreviewTextInput"/>
+                         Text="{Binding XOffset}"/>
                 <StackPanel Orientation="Horizontal"
                             Grid.Row="5">
                     <Button Content="Plot"

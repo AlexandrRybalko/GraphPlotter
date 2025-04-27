@@ -10,25 +10,27 @@ using Microsoft.Win32;
 using ScottPlot;
 using ScottPlot.WPF;
 using GraphPlotter.Models;
+using System.Windows;
 
 namespace GraphPlotter.ViewModels
 {
     public class MainViewModel : ObservableObject
     {
-        private readonly double delta = 0.1;
-        private readonly string parametersFilePath = AppDomain.CurrentDomain.BaseDirectory + "\\prevPar.txt";
+        private readonly int numberOfPoints = 401;
+        private readonly string parametersFileName = "prevPar.json";
+        private readonly string appName = "GraphPlotter";
         private ParametersModel parameters;
-        private Dictionary<int, Func<double[], double[]>> functions;
+        private List<IMathFunction> functions;
 
-        public IList<string> Functions { get; }
+        public ObservableCollection<string> FunctionTitleList { get; }
         public WpfPlot Plot { get; } = new WpfPlot();
 
         public int SelectedFunctionIndex
         {
-            get => parameters.SelectedFunction;
+            get => parameters.SelectedFunctionIndex;
             set
             {
-                parameters.SelectedFunction = value;
+                parameters.SelectedFunctionIndex = value;
                 OnPropertyChanged(nameof(SelectedFunctionIndex));
             }
         }
@@ -74,62 +76,74 @@ namespace GraphPlotter.ViewModels
         }
 
         public RelayCommand UpdatePlotCommand { get; set; }
+        public RelayCommand UpdatePlotOnInteractionCommand { get; set; }
         public RelayCommand SavePlotCommand { get; set; }
 
         public MainViewModel()
         {
+            functions = new List<IMathFunction>() { new Models.Functions.SinFunction(), new Models.Functions.CosFunction(), new Models.Functions.SincFunction() };
+            FunctionTitleList = new ObservableCollection<string>(functions.Select(x => x.Title).ToList());
             LoadPreviousParameters();
-            Functions = new ObservableCollection<string>() { "F(x)=sin(x)", "F(x)=cos(x)", "F(x)=sinc(x)" };
-            UpdatePlotCommand = new RelayCommand(UpdatePlotExecute);
-            SavePlotCommand = new RelayCommand(SavePlotExecute, SavePlotCanExecute);
 
-            functions = new Dictionary<int, Func<double[], double[]>>();
-            functions.Add(0, GetSinYs);
-            functions.Add(1, GetCosYs);
-            functions.Add(2, GetSincYs);
+            UpdatePlotCommand = new RelayCommand(UpdatePlotExecute);
+            UpdatePlotOnInteractionCommand = new RelayCommand(UpdatePlotExecute, () => Plot.Plot.GetPlottables().Any());
+            SavePlotCommand = new RelayCommand(SavePlotExecute, () => Plot.Plot.GetPlottables().Any());
         }
 
         public void SaveState()
         {
+            var localDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var appFolderPath = Path.Combine(localDataPath, appName);
+
+            if (!Directory.Exists(appFolderPath))
+            {
+                Directory.CreateDirectory(appFolderPath);
+            }
+
+            var localApplicationDataFilePath = Path.Combine(appFolderPath, parametersFileName);
             var serializedParameters = JsonSerializer.Serialize<ParametersModel>(parameters);
-            File.WriteAllText(parametersFilePath, serializedParameters);
+            File.WriteAllText(localApplicationDataFilePath, serializedParameters);
         }
 
         private void LoadPreviousParameters()
         {
-            if (File.Exists(parametersFilePath))
+            var localDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var localApplicationDataFilePath = Path.Combine(localDataPath, appName, parametersFileName);
+
+            parameters = new ParametersModel() { Mult = 1, Oscillations = 1 };
+
+            if (File.Exists(localApplicationDataFilePath))
             {
-                var parametersString = File.ReadAllText(parametersFilePath);
+                var parametersString = File.ReadAllText(localApplicationDataFilePath);
 
                 try
                 {
                     var previousParameters = JsonSerializer.Deserialize<ParametersModel>(parametersString);
+
+                    if (previousParameters.SelectedFunctionIndex < 0 || previousParameters.SelectedFunctionIndex >= functions.Count)
+                    {
+                        previousParameters.SelectedFunctionIndex = 0;
+                    }
+
                     parameters = previousParameters;
                 }
                 catch (JsonException e)
                 {
-                    parameters = new ParametersModel() { Mult = 1, Oscillations = 1 };
+                    MessageBox.Show("Unable to read previous parameters");
                 }
-            }
-            else
-            {
-                parameters = new ParametersModel() { Mult = 1, Oscillations = 1 };
             }
         }
 
         private void UpdatePlotExecute()
         {
             var xs = GetXs();
-            var ys = new double[xs.Length];
-            ys = functions[SelectedFunctionIndex](xs);
+            var ys = functions[SelectedFunctionIndex].GetYs(xs, parameters);
 
             Plot.Plot.Clear();
             Plot.Plot.Add.SignalXY(xs, ys);
             Plot.Refresh();
             SavePlotCommand.NotifyCanExecuteChanged();
         }
-
-        private bool SavePlotCanExecute() => Plot.Plot.GetPlottables().Any();
 
         private void SavePlotExecute()
         {
@@ -145,44 +159,8 @@ namespace GraphPlotter.ViewModels
 
         private double[] GetXs()
         {
-            var xsCount = (int)Math.Ceiling((Plot.Plot.Grid.XAxis.Max - Plot.Plot.Grid.XAxis.Min) / delta);
-            var result = Generate.Consecutive(xsCount, delta, Plot.Plot.Grid.XAxis.Min);
-
-            return result;
-        }
-
-        private double[] GetSinYs(double[] xs)
-        {
-            var result = new double[xs.Length];
-
-            for (int i = 0; i < xs.Length; i++)
-            {
-                result[i] = Mult * Math.Sin(xs[i] * Oscillations + XOffset) + YOffset;
-            }
-
-            return result;
-        }
-
-        private double[] GetCosYs(double[] xs)
-        {
-            var result = new double[xs.Length];
-
-            for (int i = 0; i < xs.Length; i++)
-            {
-                result[i] = Mult * Math.Cos(xs[i] * Oscillations + XOffset) + YOffset;
-            }
-
-            return result;
-        }
-
-        private double[] GetSincYs(double[] xs)
-        {
-            var result = new double[xs.Length];
-
-            for (int i = 0; i < xs.Length; i++)
-            {
-                result[i] = Mult * Math.Sin(xs[i] * Math.PI * Oscillations + XOffset) / (xs[i] * Math.PI * Oscillations + XOffset) + YOffset;
-            }
+            var delta = (Plot.Plot.Grid.XAxis.Max - Plot.Plot.Grid.XAxis.Min) / (numberOfPoints - 1);
+            var result = Generate.Consecutive(numberOfPoints, delta, Plot.Plot.Grid.XAxis.Min);
 
             return result;
         }
